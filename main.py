@@ -186,6 +186,10 @@ def poll_run_till_completion(
         print(e)
 print(6)
 
+@app.route('/check-api-key')
+def check_api_key():
+    return jsonify({'API_KEY': API_KEY})
+
 
 @app.route('/')
 def root():
