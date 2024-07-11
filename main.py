@@ -22,7 +22,7 @@ API_VERSION_ASSISTANT = os.getenv('API_VERSION_ASSISTANT')
 search_executed = False
 
 def check_api_key():
-    api_key = request.headers.get('api_key')
+    api_key = request.headers.get('X-Api-Key')
     if api_key != API_KEY:
         abort(403, description="Forbidden: Invalid or missing API key")
 
@@ -190,7 +190,7 @@ print(6)
 def check_api_key():
     headers = {key: value for key, value in request.headers}
      
-    return jsonify({'API_KEY': API_KEY,'api_user':request.headers.get('api_key'),'headers': headers})
+    return jsonify({'API_KEY': API_KEY,'api_user':request.headers.get('X-Api-Key'),'headers': headers})
 
 
 @app.route('/')
