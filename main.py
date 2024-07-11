@@ -188,7 +188,9 @@ print(6)
 
 @app.route('/check-api-key')
 def check_api_key():
-    return jsonify({'API_KEY': API_KEY,'api_user':request.headers.get('api_key')})
+    headers = {key: value for key, value in request.headers}
+     
+    return jsonify({'API_KEY': API_KEY,'api_user':request.headers.get('api_key'),'headers': headers})
 
 
 @app.route('/')
