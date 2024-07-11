@@ -22,7 +22,7 @@ API_VERSION_ASSISTANT = os.getenv('API_VERSION_ASSISTANT')
 search_executed = False
 
 def check_api_key():
-    api_key = request.headers.get('API_KEY')
+    api_key = request.headers.get('api_key')
     if api_key != API_KEY:
         abort(403, description="Forbidden: Invalid or missing API key")
 
@@ -188,7 +188,7 @@ print(6)
 
 @app.route('/check-api-key')
 def check_api_key():
-    return jsonify({'API_KEY': API_KEY,'api_user':request.headers.get('API_KEY')})
+    return jsonify({'API_KEY': API_KEY,'api_user':request.headers.get('api_key')})
 
 
 @app.route('/')
@@ -206,9 +206,11 @@ def get_chat():
     
     # Create a thread
     if not thread_req:
+        print('si')
         thread = client.beta.threads.create()
         thread_id = thread.id  # Obteniendo el id del nuevo thread
     else:
+        print('no')
         thread_id = thread_req 
     print(7)
     # Add a user question to the thread
