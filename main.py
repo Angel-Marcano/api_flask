@@ -18,8 +18,7 @@ API_KEY_SERVICE_SEARCH = os.getenv('API_KEY_SERVICE_SEARCH')
 URL_POTENCIATEC = os.getenv('URL_POTENCIATEC')
 AZURE_ENDPOINT_ASSISTANT = os.getenv('AZURE_ENDPOINT_ASSISTANT')
 API_VERSION_ASSISTANT = os.getenv('API_VERSION_ASSISTANT')
-
-search_executed = False
+ID_ASSISTANT = os.getenv('ID_ASSISTANT')
 
 def check_api_key():
     api_key = request.headers.get('X-Api-Key')
@@ -27,10 +26,6 @@ def check_api_key():
         abort(403, description="Forbidden: Invalid or missing API key")
 
 def perform_search(model, year, search):
-    global search_executed
-    if search_executed:
-        return "Búsqueda ya realizada, por favor espere los resultados."
-
     url = URL_POTENCIATEC
     headers = {
         "Api-key": API_KEY_SERVICE_SEARCH,
@@ -70,7 +65,6 @@ def perform_search(model, year, search):
         with open("output.json", "w", encoding="utf-8") as file:
             json.dump(results, file, ensure_ascii=False, indent=4)
 
-        search_executed = True
         print("Datos guardados en output.json")
         print("response : " + response_message)
         return response_message
@@ -112,26 +106,6 @@ client = AzureOpenAI(
     api_version=API_VERSION_ASSISTANT,
 )
 print(4)
-
-# Create an assistant
-assistant = client.beta.assistants.create(
-    name="python-asistant-openai",
-    instructions=f"""
-      Eres un asistente de mecánica que puede buscar y proporcionar manuales y guías técnicas de vehículos.
-
-      Usando la herramienta de búsqueda "perform_search" proporcionada, realiza la búsqueda una vez se tengan los datos requeridos y proporciona una respuesta detallada que incluya:
-
-      1. La URL del manual o guía técnica correspondiente, si se encuentra disponible.
-      2. Un resumen del contenido del manual o guía, destacando información relevante sobre el esquema del motor.
-      3. Envía las 2 URL de manual.
-
-      Responde de manera concisa y útil para el usuario.
-      Si el usuario no te envía los datos de modelo, año y detalles de lo buscado, debes responder que necesita datos adicionales como (y agregar los datos que falten para ejecutar la búsqueda).
-      """,
-    model="python-asistant-gpt4125",
-    tools=tools
-)
-print(5)
 
 def poll_run_till_completion(
     client: AzureOpenAI,
@@ -224,7 +198,7 @@ def get_chat():
     print(8)
     run = client.beta.threads.runs.create(
         thread_id=thread_id,
-        assistant_id=assistant.id,
+        assistant_id=ID_ASSISTANT,
         instructions=f"""
         Eres un asistente de mecánica que puede buscar y proporcionar manuales y guías técnicas de vehículos.
 
