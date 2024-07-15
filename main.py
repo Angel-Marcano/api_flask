@@ -19,6 +19,7 @@ URL_POTENCIATEC = os.getenv('URL_POTENCIATEC')
 AZURE_ENDPOINT_ASSISTANT = os.getenv('AZURE_ENDPOINT_ASSISTANT')
 API_VERSION_ASSISTANT = os.getenv('API_VERSION_ASSISTANT')
 ID_ASSISTANT = os.getenv('ID_ASSISTANT')
+ID_BASIC_ASSISTANT = os.getenv('ID_BASIC_ASSISTANT')
 
 def check_api_key():
     api_key = request.headers.get('X-Api-Key')
@@ -232,7 +233,74 @@ def get_chat():
                 texto_respuesta = content_block.text.value
                 return jsonify({'text': texto_respuesta, 'thread': thread_id})
     print(messages.to_json())
-    
+
+@app.route('/basic_asistant')
+def get_basic_chat():
+    check_api_key()
+
+    message = request.args.get('msj')
+    thread_req = request.args.get('thread_id')
+
+    if not message:
+        return jsonify({'error': 'Falta el parámetro msj'}), 400
+
+    # Crear o recuperar el thread de la conversación
+    if not thread_req:
+        thread = client.beta.threads.create()
+        thread_id = thread.id
+    else:
+        thread_id = thread_req
+
+    # Añadir la pregunta del usuario al thread
+    user_message = client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=message,
+    )
+
+    # Lista ampliada de palabras clave en español e inglés
+    keywords_mecanica = [
+        'motor', 'coche', 'automóvil', 'mecánico', 'reparación', 'transmisión', 'manual', 'guía',
+        'vehículo', 'carro', 'mantenimiento', 'servicio', 'frenos', 'aceite', 'neumáticos', 'suspensión',
+        'chasis', 'clutch', 'embrague', 'escape', 'filtro', 'radiador', 'bujía', 'inyección', 'diagnóstico',
+        'engine', 'car', 'automobile', 'mechanic', 'repair', 'transmission', 'manual', 'guide',
+        'vehicle', 'maintenance', 'service', 'brakes', 'oil', 'tires', 'suspension',
+        'chassis', 'clutch', 'exhaust', 'filter', 'radiator', 'spark plug', 'injection', 'diagnosis'
+    ]
+
+    # Verificar si el mensaje del usuario está relacionado con mecánica antes de procesarlo
+    if any(keyword in message.lower() for keyword in keywords_mecanica):
+        # Crear y ejecutar el thread solo si el mensaje está relacionado con mecánica
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=ID_BASIC_ASSISTANT,
+            instructions="""
+            Eres un asistente de mecánica dedicado a responder consultas sobre manuales y guías de reparación de vehículos.
+            """
+        )
+
+        # Ejecutar la función de polling y esperar la respuesta
+        poll_run_till_completion(client, thread_id, run.id, available_function, verbose=True)
+
+        # Procesar y obtener las respuestas
+        messages = client.beta.threads.messages.list(thread_id=thread_id)
+        messages_list = list(messages)
+
+        if messages_list:
+            # Obtener el contenido del primer mensaje con respuesta
+            primer_mensaje = messages_list[0]
+            if primer_mensaje.content:
+                content_block = primer_mensaje.content[0]
+                if hasattr(content_block, 'text') and hasattr(content_block.text, 'value'):
+                    texto_respuesta = content_block.text.value
+                    return jsonify({'text': texto_respuesta, 'thread': thread_id})
+    else:
+        # Indicar al usuario que solo se pueden responder preguntas de mecánica
+        return jsonify({'text': 'Solo puedo responder preguntas relacionadas con la mecánica de vehículos. Por favor, realiza una consulta sobre este tema.','thread': thread_id}), 200
+
+    # En caso de no haber mensajes válidos, devolver información adicional
+    return jsonify({'error': 'No se pudo procesar la respuesta correctamente', 'thread': thread_id}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
