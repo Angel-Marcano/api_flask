@@ -114,7 +114,7 @@ def poll_run_till_completion(
     run_id: str,
     available_functions: dict,
     verbose: bool,
-    max_steps: int = 20,  # Incrementado para más intentos de polling
+    max_steps: int = 30,  # Incrementado para más intentos de polling
     wait: int = 3,
 ) -> None:
     if (client is None and thread_id is None) or run_id is None:
