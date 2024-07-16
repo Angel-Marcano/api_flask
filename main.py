@@ -200,18 +200,18 @@ def get_chat():
     run = client.beta.threads.runs.create(
         thread_id=thread_id,
         assistant_id=ID_ASSISTANT,
-        instructions=f"""
-        Eres un asistente de mecánica que puede buscar y proporcionar manuales y guías técnicas de vehículos.
+        # instructions=f"""
+        # Eres un asistente de mecánica que puede buscar y proporcionar manuales y guías técnicas de vehículos.
 
-        Usando la herramienta de búsqueda "perform_search" proporcionada, realiza la búsqueda una vez se tengan los datos requeridos y proporciona una respuesta detallada que incluya:
+        # Usando la herramienta de búsqueda "perform_search" proporcionada, realiza la búsqueda una vez se tengan los datos requeridos y proporciona una respuesta detallada que incluya:
 
-        1. La URL del manual o guía técnica correspondiente, si se encuentra disponible.
-        2. Un resumen del contenido del manual o guía, destacando información relevante sobre el esquema del motor.
-        3. Envía las 2 URL de manual.
+        # 1. La URL del manual o guía técnica correspondiente, si se encuentra disponible.
+        # 2. Un resumen del contenido del manual o guía, destacando información relevante sobre el esquema del motor.
+        # 3. Envía las 2 URL de manual.
 
-        Responde de manera concisa y útil para el usuario.
-        Si el usuario no te envía los datos de modelo, año y detalles de lo buscado, debes responder que necesita datos adicionales como (y agregar los datos que falten para ejecutar la búsqueda).
-        """
+        # Responde de manera concisa y útil para el usuario.
+        # Si el usuario no te envía los datos de modelo, año y detalles de lo buscado, debes responder que necesita datos adicionales como (y agregar los datos que falten para ejecutar la búsqueda).
+        # """
     )
     print(9)
     # Run the thread and poll for the result
@@ -269,14 +269,19 @@ def get_basic_chat():
     ]
 
     # Verificar si el mensaje del usuario está relacionado con mecánica antes de procesarlo
-    if any(keyword in message.lower() for keyword in keywords_mecanica):
+    # comentado el validador de respuesta.
+    #if any(keyword in message.lower() for keyword in keywords_mecanica):
+    if True: 
         # Crear y ejecutar el thread solo si el mensaje está relacionado con mecánica
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=ID_BASIC_ASSISTANT,
-            instructions="""
-            Eres un asistente de mecánica dedicado a responder consultas sobre manuales y guías de reparación de vehículos.
-            """
+            # instructions="""
+            # Eres un asistente de mecánica dedicado a responder consultas sobre manuales y guías de reparación de vehículos.
+            # """
+            # instructions="""
+            # Eres un asistente de cocina, puedes dar recetas.
+            # """
         )
 
         # Ejecutar la función de polling y esperar la respuesta
