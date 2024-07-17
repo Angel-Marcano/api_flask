@@ -53,7 +53,8 @@ def perform_search(model, year, search):
             result = {
                 "url_manual": item.get("url", ""),
                 "title": item.get("title", ""),
-                "content": (item.get("content", "")[:150] + '...') if len(item.get("content", "")) > 150 else item.get("content", "")
+                "content": (item.get("content", "")[:150] + '...') if len(item.get("content", "")) > 150 else item.get("content", ""),
+                "page": item.get("page", ""),
             }
             results.append(result)
 
