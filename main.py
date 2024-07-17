@@ -60,7 +60,7 @@ def perform_search(model, year, search):
         # Crear una respuesta más humana
         response_message = "He encontrado los siguientes documentos:\n"
         for result in results:
-            response_message += f"\nTítulo: {result['title']}\nURL: {result['url_manual']}\nDescripción: {result['content']}\n"
+            response_message += f"\nTítulo: {result['title']}\nURL: {result['url_manual']}\nDescripción: {result['content']}\nPagina: {result['page']}\n"
 
         # Guardar los datos en un archivo JSON
         with open("output.json", "w", encoding="utf-8") as file:
@@ -78,7 +78,7 @@ tools = [
         "type": "function",
         "function": {
             "name": "perform_search",
-            "description": "Obtain manuals or advisory guides in the mechanical field of any vehicle or automotive component. The response will be an array structure with json, interpret it and give a response that includes the url_manual properties: which will be the path to download the manual and if possible use the title and content property to give more details, that with one of the 2 responses received.",
+            "description": "Obtain manuals or advisory guides in the mechanical field of any vehicle or automotive component. The response will be an array structure with json, interpret it and give a response that includes the url_manual properties: what will be the path to download the manual and if possible use the title and content property to give more details, also add the page property which is the number of the page where the searched content is, that with one of the 2 responses received.",
             "parameters": {
                 "type": "object",
                 "properties": {
