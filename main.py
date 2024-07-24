@@ -1,10 +1,11 @@
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request, abort, render_template_string ,Response
 from dotenv import load_dotenv
 import os
 from openai import AzureOpenAI
 import requests
 import json
 import time
+from urllib.parse import quote
 
 app = Flask(__name__)
 
@@ -307,6 +308,161 @@ def get_basic_chat():
     # En caso de no haber mensajes válidos, devolver información adicional
     return jsonify({'error': 'No se pudo procesar la respuesta correctamente', 'thread': thread_id}), 500
 
+
+@app.route('/viewPdf')
+def view_pdf():
+    original_url = request.args.get('url')
+    page = request.args.get('page', default=1, type=int)
+    if not original_url:
+        return "URL del PDF no proporcionada", 400
+
+    # Convertir barras invertidas a barras normales y asegurar la codificación correcta
+    corrected_url = original_url.replace('%5C', '/')
+    safe_url = quote(corrected_url, safe=':/')
+
+    # Plantilla HTML que incorpora PDF.js para visualizar el PDF con navegación
+    html_template = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Visualizador de PDF</title>
+        <link rel="stylesheet" href="https://unpkg.com/pdfjs-dist@3.11.174/web/pdf_viewer.css">
+        <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.js"></script>
+        <script src="https://unpkg.com/pdfjs-dist@3.11.174/web/pdf_viewer.js"></script>
+        <style>
+            #viewerContainer {{
+                width: 100%;
+                height: 90vh;
+                overflow: auto;
+                position: absolute;
+                top: 50px;  /* Ajuste de espacio para la barra de herramientas */
+                left: 0;
+            }}
+            #pdf-viewer {{
+                width: 100%;
+                height: 100%;
+            }}
+            #toolbar {{
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 50px;
+                background-color: #333;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+                z-index: 1000;
+            }}
+            #toolbar button, #toolbar input {{
+                background-color: #444;
+                border: none;
+                color: white;
+                padding: 10px;
+                cursor: pointer;
+                margin: 0 5px;
+            }}
+            #toolbar button:hover, #toolbar input:hover {{
+                background-color: #555;
+            }}
+            #toolbar input {{
+                width: 50px;
+                text-align: center;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Visualizador de PDF</h1>
+        <div id="toolbar">
+            <button id="prev">Anterior</button>
+            <span>Página: <input type="number" id="page_num_input" min="1" value="{page}" style="width: 50px;"> / <span id="page_count">1</span></span>
+            <button id="next">Siguiente</button>
+            <button id="download">Descargar</button>
+        </div>
+        <div id="viewerContainer">
+            <div id="pdf-viewer" class="pdfViewer"></div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {{
+                console.log('DOM fully loaded and parsed');
+                const pdfjsLib = window['pdfjs-dist/build/pdf'];
+                const pdfjsViewer = window['pdfjs-dist/web/pdf_viewer'];
+
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.js';
+
+                var container = document.getElementById('viewerContainer');
+                var eventBus = new pdfjsViewer.EventBus();
+
+                var pdfLinkService = new pdfjsViewer.PDFLinkService({{
+                    eventBus: eventBus
+                }});
+
+                var pdfViewer = new pdfjsViewer.PDFViewer({{
+                    container: container,
+                    eventBus: eventBus,
+                    linkService: pdfLinkService
+                }});
+
+                pdfLinkService.setViewer(pdfViewer);
+
+                var loadingTask = pdfjsLib.getDocument("{safe_url}");
+                loadingTask.promise.then(function (pdf) {{
+                    console.log('PDF loaded successfully');
+                    pdfViewer.setDocument(pdf);
+                    pdfLinkService.setDocument(pdf, null);
+
+                    document.getElementById('page_count').textContent = pdf.numPages;
+
+                    // Wait until all pages are loaded before setting the initial page
+                    pdfViewer.eventBus.on('pagesinit', function () {{
+                        pdfViewer.currentPageNumber = {page};
+                    }});
+
+                    document.getElementById('prev').addEventListener('click', function() {{
+                        if (pdfViewer.currentPageNumber > 1) {{
+                            pdfViewer.currentPageNumber--;
+                            document.getElementById('page_num_input').value = pdfViewer.currentPageNumber;
+                        }}
+                    }});
+
+                    document.getElementById('next').addEventListener('click', function() {{
+                        if (pdfViewer.currentPageNumber < pdf.numPages) {{
+                            pdfViewer.currentPageNumber++;
+                            document.getElementById('page_num_input').value = pdfViewer.currentPageNumber;
+                        }}
+                    }});
+
+                    document.getElementById('page_num_input').addEventListener('change', function() {{
+                        var pageNumber = parseInt(this.value);
+                        if (pageNumber >= 1 && pageNumber <= pdf.numPages) {{
+                            pdfViewer.currentPageNumber = pageNumber;
+                        }}
+                    }});
+
+                    document.getElementById('download').addEventListener('click', function() {{
+                        var a = document.createElement('a');
+                        a.href = "{safe_url}";
+                        a.download = "document.pdf";
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }});
+
+                    pdfViewer.eventBus.on('pagechanging', function (evt) {{
+                        document.getElementById('page_num_input').value = evt.pageNumber;
+                    }});
+                }}, function (reason) {{
+                    console.error('Error loading PDF: ', reason);
+                }});
+            }});
+        </script>
+    </body>
+    </html>
+    """
+
+    return render_template_string(html_template)
 
 if __name__ == "__main__":
     app.run(debug=True)
