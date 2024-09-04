@@ -38,7 +38,7 @@ def perform_search(model, year, search):
         "queryType": "semantic",
         "semanticConfiguration": "my-semantic-config",
         "captions": "extractive",
-        "top": 2,
+        "top": 6,
         "answers": "extractive|count-3",
         "queryLanguage": "en-US"
     }
@@ -50,7 +50,7 @@ def perform_search(model, year, search):
 
         # Extraer los datos deseados
         results = []
-        for item in data[:2]:
+        for item in data[:6]:
             result = {
                 "url_manual": item.get("url", ""),
                 "title": item.get("title", ""),
@@ -68,8 +68,8 @@ def perform_search(model, year, search):
         with open("output.json", "w", encoding="utf-8") as file:
             json.dump(results, file, ensure_ascii=False, indent=4)
 
-        print("Datos guardados en output.json")
-        print("response : " + response_message)
+        #print("Datos guardados en output.json")
+        #print("response : " + response_message)
         return response_message
 
     except requests.exceptions.RequestException as e:
@@ -100,15 +100,15 @@ tools = [
     }
 ]
 
-print(2)
+
 available_function = {"perform_search": perform_search}
-print(3)
+
 client = AzureOpenAI(
     api_key=API_KEY_AZURE_ASSISTANT,
     azure_endpoint=AZURE_ENDPOINT_ASSISTANT,
     api_version=API_VERSION_ASSISTANT,
 )
-print(4)
+
 
 def poll_run_till_completion(
     client: AzureOpenAI,
@@ -124,8 +124,6 @@ def poll_run_till_completion(
         return
     try:
         cnt = 0
-        print(11)
-        print(cnt)
         while cnt < max_steps:
             run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
             
@@ -161,7 +159,6 @@ def poll_run_till_completion(
 
     except Exception as e:
         print(e)
-print(6)
 
 @app.route('/check-api-key')
 def check_api_key():
@@ -185,20 +182,16 @@ def get_chat():
     
     # Create a thread
     if not thread_req:
-        print('si')
         thread = client.beta.threads.create()
         thread_id = thread.id  # Obteniendo el id del nuevo thread
     else:
-        print('no')
         thread_id = thread_req 
-    print(7)
     # Add a user question to the thread
     message = client.beta.threads.messages.create(
         thread_id=thread_id,
         role="user",
         content=message,
     )
-    print(8)
     run = client.beta.threads.runs.create(
         thread_id=thread_id,
         assistant_id=ID_ASSISTANT,
@@ -215,10 +208,9 @@ def get_chat():
         # Si el usuario no te envía los datos de modelo, año y detalles de lo buscado, debes responder que necesita datos adicionales como (y agregar los datos que falten para ejecutar la búsqueda).
         # """
     )
-    print(9)
+    
     # Run the thread and poll for the result
     poll_run_till_completion(client=client, thread_id=thread_id, run_id=run.id, available_functions=available_function, verbose=True)
-    print(10)
     # Process the messages
     messages = client.beta.threads.messages.list(thread_id=thread_id)
 
